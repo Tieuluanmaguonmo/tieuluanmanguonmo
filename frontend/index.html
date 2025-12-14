@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Trang Chủ Flashcard</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="bg-light">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+      <div class="container-fluid">
+        <a class="navbar-brand" href="index.html">Flashcard App</a>
+        <button
+          class="navbar-toggler"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#navbarNav"
+          aria-controls="navbarNav"
+          aria-expanded="false"
+          aria-label="Toggle navigation"
+        >
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+          <ul class="navbar-nav ms-auto">
+            <li class="nav-item">
+              <a class="nav-link active" href="index.html">Trang Chủ</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="daily_goal.html">Mục Tiêu Hàng Ngày</a>
+            </li>
+            <li class="nav-item dropdown">
+              <a
+                class="nav-link dropdown-toggle"
+                href="#"
+                id="userDropdown"
+                role="button"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+              >
+                Tài Khoản
+              </a>
+              <ul
+                class="dropdown-menu dropdown-menu-end"
+                aria-labelledby="userDropdown"
+              >
+                <li>
+                  <a class="dropdown-item" href="profile.html" id="userNameLink"
+                    >Profile</a
+                  >
+                </li>
+                <li><hr class="dropdown-divider" /></li>
+                <li>
+                  <a class="dropdown-item" href="#" id="logoutBtn">Đăng xuất</a>
+                </li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <div class="container mt-5">
+      <h2 class="mb-4">Bộ Flashcard của bạn</h2>
+      <div id="boContainer" class="row g-3"></div>
+    </div>
+
+    <script>
+      const API_BASE = "http://127.0.0.1:8000";
+      const boContainer = document.getElementById("boContainer");
+
+      // Lấy thông tin user từ localStorage
+      const user = JSON.parse(localStorage.getItem("user"));
+      const userNameLink = document.getElementById("userNameLink");
+      const logoutBtn = document.getElementById("logoutBtn");
+
+      // Nếu chưa login, chuyển về trang login
+      if (!user) {
+        alert("Vui lòng đăng nhập!");
+        window.location.href = "login.html";
+      } else {
+        // Hiển thị tên user trên dropdown
+        userNameLink.textContent = user.email || "Profile";
+      }
+
+      // Xử lý logout
+      logoutBtn.addEventListener("click", () => {
+        localStorage.removeItem("user"); // xóa dữ liệu user
+        window.location.href = "login.html"; // chuyển về trang login
+      });
+
+      // Load bộ flashcard của user
+      async function loadBoFlashcard() {
+        try {
+          const res = await fetch(`${API_BASE}/bo-flashcard`);
+          const bos = await res.json();
+          renderBos(bos);
+        } catch (err) {
+          alert("Lỗi khi tải dữ liệu: " + err);
+        }
+      }
+
+      function renderBos(bos) {
+        boContainer.innerHTML = "";
+        if (bos.length === 0) {
+          boContainer.innerHTML = `<p>Bạn chưa có bộ flashcard nào.</p>`;
+          return;
+        }
+
+        bos.forEach((b) => {
+          const div = document.createElement("div");
+          div.className = "col-md-4";
+          div.innerHTML = `
+        <div class="card shadow">
+          <div class="card-body">
+            <h5 class="card-title">${b.ten}</h5>
+            <p class="card-text">${b.mo_ta || ""}</p>
+            <div class="d-flex gap-3">
+              <a class="btn btn-success mt-2" href="flashcard_detail.html?bo_id=${
+                b.id
+              }" class="btn btn-primary">Xem Flashcard</a>
+            <a href="progress.html?user_id=${user.id}&bo_id=${
+            b.id
+          }" class="btn btn-warning mt-2">Biểu Đồ Tiến Độ</a>
+          </div>
+          </div>
+        </div>
+      `;
+          boContainer.appendChild(div);
+        });
+      }
+
+      loadBoFlashcard();
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  </body>
+</html>

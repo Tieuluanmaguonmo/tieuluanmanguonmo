@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Flashcard App - Đổi mật khẩu</title>
+    <!-- Bootstrap CSS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="bg-light">
+    <div
+      class="container vh-100 d-flex justify-content-center align-items-center"
+    >
+      <div class="card p-4 shadow" style="width: 100%; max-width: 400px">
+        <h3 class="text-center mb-3">Đổi mật khẩu</h3>
+
+        <form id="changePasswordForm">
+          <div class="mb-3">
+            <label for="currentPassword" class="form-label"
+              >Mật khẩu hiện tại</label
+            >
+            <input
+              type="password"
+              class="form-control"
+              id="currentPassword"
+              placeholder="Nhập mật khẩu hiện tại"
+              required
+            />
+          </div>
+
+          <div class="mb-3">
+            <label for="newPassword" class="form-label">Mật khẩu mới</label>
+            <input
+              type="password"
+              class="form-control"
+              id="newPassword"
+              placeholder="Nhập mật khẩu mới"
+              required
+            />
+          </div>
+
+          <div class="mb-3">
+            <label for="confirmPassword" class="form-label"
+              >Xác nhận mật khẩu mới</label
+            >
+            <input
+              type="password"
+              class="form-control"
+              id="confirmPassword"
+              placeholder="Nhập lại mật khẩu mới"
+              required
+            />
+          </div>
+
+          <button type="submit" class="btn btn-primary w-100">Cập nhật</button>
+        </form>
+
+        <div id="message" class="mt-3 text-center" style="display: none"></div>
+      </div>
+    </div>
+
+    <!-- Bootstrap JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+      const API_BASE = "http://127.0.0.1:8000";
+      const form = document.getElementById("changePasswordForm");
+      const message = document.getElementById("message");
+
+      // Kiểm tra login
+      const user = JSON.parse(localStorage.getItem("user"));
+      if (!user) {
+        alert("Vui lòng đăng nhập!");
+        window.location.href = "login.html";
+      }
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        message.style.display = "none";
+
+        const currentPassword = document
+          .getElementById("currentPassword")
+          .value.trim();
+        const newPassword = document.getElementById("newPassword").value.trim();
+        const confirmPassword = document
+          .getElementById("confirmPassword")
+          .value.trim();
+
+        if (!currentPassword || !newPassword || !confirmPassword) {
+          message.textContent = "Vui lòng nhập đầy đủ thông tin.";
+          message.className = "text-danger text-center mt-3";
+          message.style.display = "block";
+          return;
+        }
+
+        if (newPassword !== confirmPassword) {
+          message.textContent = "Mật khẩu mới không khớp.";
+          message.className = "text-danger text-center mt-3";
+          message.style.display = "block";
+          return;
+        }
+
+        try {
+          // Xác thực mật khẩu hiện tại trước khi đổi
+          const loginRes = await fetch(`${API_BASE}/dang-nhap`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email: user.email,
+              mat_khau: currentPassword,
+            }),
+          });
+
+          if (!loginRes.ok) {
+            throw new Error("Mật khẩu hiện tại không đúng");
+          }
+
+          // Gọi API cập nhật người dùng (PUT)
+          const res = await fetch(`${API_BASE}/nguoi-dung/${user.id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ mat_khau: newPassword }), // API của bạn cần hỗ trợ nhận mat_khau
+          });
+
+          if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.detail || "Cập nhật mật khẩu thất bại");
+          }
+
+          message.textContent = "Đổi mật khẩu thành công!";
+          message.className = "text-success text-center mt-3";
+          message.style.display = "block";
+
+          // Cập nhật localStorage nếu cần
+          user.mat_khau = newPassword;
+          localStorage.setItem("user", JSON.stringify(user));
+
+          // Clear form
+          form.reset();
+        } catch (err) {
+          message.textContent = err.message;
+          message.className = "text-danger text-center mt-3";
+          message.style.display = "block";
+        }
+      });
+    </script>
+  </body>
+</html>

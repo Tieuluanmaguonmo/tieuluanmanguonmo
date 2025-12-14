@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Flashcard</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="bg-light">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+      <div class="container-fluid">
+        <a class="navbar-brand" href="index.html">Flashcard App</a>
+        <button
+          class="navbar-toggler"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#navbarNav"
+          aria-controls="navbarNav"
+          aria-expanded="false"
+          aria-label="Toggle navigation"
+        >
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+          <ul class="navbar-nav ms-auto">
+            <li class="nav-item">
+              <a class="nav-link active" href="admin.html">QL Bộ Card</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="admin_user.html">QL Người dùng</a>
+            </li>
+            <li class="nav-item dropdown">
+              <a
+                class="nav-link dropdown-toggle"
+                href="#"
+                id="userDropdown"
+                role="button"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+              >
+                Tài Khoản
+              </a>
+              <ul
+                class="dropdown-menu dropdown-menu-end"
+                aria-labelledby="userDropdown"
+              >
+                <li>
+                  <a class="dropdown-item" href="profile.html" id="userNameLink"
+                    >Profile</a
+                  >
+                </li>
+                <li><hr class="dropdown-divider" /></li>
+                <li>
+                  <a class="dropdown-item" href="#" id="logoutBtn">Đăng xuất</a>
+                </li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+    <div class="container mt-5">
+      <h2 class="mb-4">Quản lý Flashcard App</h2>
+
+      <!-- ===================== -->
+      <!-- Quản lý Bộ Flashcard -->
+      <!-- ===================== -->
+      <div class="card mb-4 p-3 shadow">
+        <h5 id="boFormTitle">Thêm Bộ Flashcard</h5>
+        <form id="boForm">
+          <input type="hidden" id="boId" />
+          <div class="mb-3">
+            <label class="form-label">Tên Bộ</label>
+            <input type="text" id="boTen" class="form-control" required />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Mô tả</label>
+            <input type="text" id="boMoTa" class="form-control" />
+          </div>
+          <button type="submit" class="btn btn-primary">Lưu</button>
+          <button type="button" id="boCancelBtn" class="btn btn-secondary">
+            Hủy
+          </button>
+        </form>
+      </div>
+
+      <table class="table table-bordered table-striped shadow bg-white mb-5">
+        <thead class="table-dark">
+          <tr>
+            <th>Tên Bộ</th>
+            <th>Mô tả</th>
+            <th>Hành động</th>
+          </tr>
+        </thead>
+        <tbody id="boTableBody"></tbody>
+      </table>
+
+      <!-- ===================== -->
+      <!-- Quản lý Flashcard -->
+      <!-- ===================== -->
+      <div class="card mb-4 p-3 shadow">
+        <h5 id="fcFormTitle">Thêm Flashcard</h5>
+        <form id="fcForm">
+          <input type="hidden" id="fcId" />
+          <div class="mb-3">
+            <label class="form-label">Chọn Bộ Flashcard</label>
+            <select id="fcBoId" class="form-select" required></select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Mặt trước</label>
+            <input type="text" id="fcMatTruoc" class="form-control" required />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Mặt sau</label>
+            <input type="text" id="fcMatSau" class="form-control" required />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Ví dụ</label>
+            <input type="text" id="fcViDu" class="form-control" />
+          </div>
+          <button type="submit" class="btn btn-primary">Lưu</button>
+          <button type="button" id="fcCancelBtn" class="btn btn-secondary">
+            Hủy
+          </button>
+        </form>
+      </div>
+
+      <table class="table table-bordered table-striped shadow bg-white">
+        <thead class="table-dark">
+          <tr>
+            <th>Bộ</th>
+            <th>Mặt trước</th>
+            <th>Mặt sau</th>
+            <th>Ví dụ</th>
+            <th>Hành động</th>
+          </tr>
+        </thead>
+        <tbody id="fcTableBody"></tbody>
+      </table>
+    </div>
+
+    <script>
+      const API_BASE = "http://127.0.0.1:8000";
+
+      // -----------------------
+      // Biến lưu dữ liệu
+      // -----------------------
+      let bos = [];
+      let flashcards = [];
+
+      // -----------------------
+      // DOM Elements
+      // -----------------------
+      const boTableBody = document.getElementById("boTableBody");
+      const boForm = document.getElementById("boForm");
+      const boFormTitle = document.getElementById("boFormTitle");
+      const boCancelBtn = document.getElementById("boCancelBtn");
+      const boIdInput = document.getElementById("boId");
+      const boTenInput = document.getElementById("boTen");
+      const boMoTaInput = document.getElementById("boMoTa");
+
+      const fcTableBody = document.getElementById("fcTableBody");
+      const fcForm = document.getElementById("fcForm");
+      const fcFormTitle = document.getElementById("fcFormTitle");
+      const fcCancelBtn = document.getElementById("fcCancelBtn");
+      const fcIdInput = document.getElementById("fcId");
+      const fcBoIdSelect = document.getElementById("fcBoId");
+      const fcMatTruocInput = document.getElementById("fcMatTruoc");
+      const fcMatSauInput = document.getElementById("fcMatSau");
+      const fcViDuInput = document.getElementById("fcViDu");
+
+      const user = JSON.parse(localStorage.getItem("user"));
+      if (!user) alert("Vui lòng đăng nhập trước khi quản lý!");
+
+      // ========================
+      // HÀM LOAD DỮ LIỆU
+      // ========================
+      async function loadBos() {
+        const res = await fetch(`${API_BASE}/bo-flashcard`);
+        bos = await res.json();
+        renderBoTable();
+        renderBoOptions();
+      }
+
+      function renderBoTable() {
+        boTableBody.innerHTML = "";
+        bos.forEach((b) => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+        <td>${b.ten}</td>
+        <td>${b.mo_ta || ""}</td>
+        <td>
+          <button class="btn btn-sm btn-info me-1" onclick="editBo('${
+            b.id
+          }')">Sửa</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteBo('${
+            b.id
+          }')">Xóa</button>
+        </td>
+      `;
+          boTableBody.appendChild(tr);
+        });
+      }
+
+      function renderBoOptions() {
+        fcBoIdSelect.innerHTML = "";
+        bos.forEach((b) => {
+          const opt = document.createElement("option");
+          opt.value = b.id;
+          opt.textContent = b.ten;
+          fcBoIdSelect.appendChild(opt);
+        });
+      }
+
+      async function loadFlashcards() {
+        const res = await fetch(`${API_BASE}/flashcard`);
+        flashcards = await res.json();
+        renderFcTable();
+      }
+
+      function renderFcTable() {
+        fcTableBody.innerHTML = "";
+        flashcards.forEach((fc) => {
+          const boName = bos.find((b) => b.id === fc.bo_id)?.ten || "";
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+        <td>${boName}</td>
+        <td>${fc.mat_truoc}</td>
+        <td>${fc.mat_sau}</td>
+        <td>${fc.vi_du || ""}</td>
+        <td>
+          <button class="btn btn-sm btn-info me-1" onclick="editFc('${
+            fc.id
+          }')">Sửa</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteFc('${
+            fc.id
+          }')">Xóa</button>
+        </td>
+      `;
+          fcTableBody.appendChild(tr);
+        });
+      }
+
+      // ========================
+      // CRUD BỘ FLASHCARD
+      // ========================
+      boForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const boId = boIdInput.value;
+        const ten = boTenInput.value;
+        const mo_ta = boMoTaInput.value;
+        try {
+          if (boId) {
+            // PUT
+            await fetch(`${API_BASE}/bo-flashcard/${boId}`, {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ ten, mo_ta }),
+            });
+          } else {
+            // POST
+            await fetch(`${API_BASE}/bo-flashcard/${user.id}`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ ten, mo_ta }),
+            });
+          }
+          boForm.reset();
+          boIdInput.value = "";
+          boFormTitle.textContent = "Thêm Bộ Flashcard";
+          await loadBos();
+          await loadFlashcards(); // cập nhật bảng flashcard
+        } catch (err) {
+          alert(err);
+        }
+      });
+
+      function editBo(id) {
+        const bo = bos.find((b) => b.id === id);
+        if (!bo) return;
+        boIdInput.value = bo.id;
+        boTenInput.value = bo.ten;
+        boMoTaInput.value = bo.mo_ta || "";
+        boFormTitle.textContent = "Cập nhật Bộ Flashcard";
+      }
+
+      boCancelBtn.addEventListener("click", () => {
+        boForm.reset();
+        boIdInput.value = "";
+        boFormTitle.textContent = "Thêm Bộ Flashcard";
+      });
+
+      async function deleteBo(id) {
+        if (!confirm("Bạn có chắc chắn muốn xóa bộ flashcard này?")) return;
+        await fetch(`${API_BASE}/bo-flashcard/${id}`, { method: "DELETE" });
+        await loadBos();
+        await loadFlashcards();
+      }
+
+      // ========================
+      // CRUD FLASHCARD
+      // ========================
+      fcForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const fcId = fcIdInput.value;
+        const boId = fcBoIdSelect.value;
+        const mat_truoc = fcMatTruocInput.value;
+        const mat_sau = fcMatSauInput.value;
+        const vi_du = fcViDuInput.value;
+
+        try {
+          if (fcId) {
+            await fetch(`${API_BASE}/flashcard/${fcId}`, {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ mat_truoc, mat_sau, vi_du }),
+            });
+          } else {
+            await fetch(`${API_BASE}/flashcard/${boId}`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ mat_truoc, mat_sau, vi_du }),
+            });
+          }
+          fcForm.reset();
+          fcIdInput.value = "";
+          fcFormTitle.textContent = "Thêm Flashcard";
+          await loadFlashcards();
+        } catch (err) {
+          alert(err);
+        }
+      });
+
+      function editFc(id) {
+        const fc = flashcards.find((f) => f.id === id);
+        if (!fc) return;
+        fcIdInput.value = fc.id;
+        fcBoIdSelect.value = fc.bo_id;
+        fcMatTruocInput.value = fc.mat_truoc;
+        fcMatSauInput.value = fc.mat_sau;
+        fcViDuInput.value = fc.vi_du || "";
+        fcFormTitle.textContent = "Cập nhật Flashcard";
+      }
+
+      fcCancelBtn.addEventListener("click", () => {
+        fcForm.reset();
+        fcIdInput.value = "";
+        fcFormTitle.textContent = "Thêm Flashcard";
+      });
+
+      async function deleteFc(id) {
+        if (!confirm("Bạn có chắc chắn muốn xóa flashcard này?")) return;
+        await fetch(`${API_BASE}/flashcard/${id}`, { method: "DELETE" });
+        await loadFlashcards();
+      }
+
+      // ========================
+      // INIT
+      // ========================
+      loadBos().then(loadFlashcards);
+      // ===================== USER LOGIN + LOGOUT =====================
+
+      if (!user) {
+        alert("Vui lòng đăng nhập!");
+        window.location.href = "login.html"; // chuyển về trang login
+      }
+
+      // Dropdown user & logout
+      const userNameLink = document.getElementById("userNameLink");
+      const logoutBtn = document.getElementById("logoutBtn");
+      if (userNameLink) userNameLink.textContent = user.email || "Profile";
+
+      if (logoutBtn) {
+        logoutBtn.addEventListener("click", () => {
+          localStorage.removeItem("user");
+          window.location.href = "login.html";
+        });
+      }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  </body>
+</html>

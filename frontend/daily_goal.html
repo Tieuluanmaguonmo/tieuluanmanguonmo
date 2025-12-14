@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mục Tiêu Hàng Ngày</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="bg-light">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+      <div class="container-fluid">
+        <a class="navbar-brand" href="index.html">Flashcard App</a>
+        <button
+          class="navbar-toggler"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#navbarNav"
+          aria-controls="navbarNav"
+          aria-expanded="false"
+          aria-label="Toggle navigation"
+        >
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+          <ul class="navbar-nav ms-auto">
+            <li class="nav-item">
+              <a class="nav-link" href="index.html">Trang Chủ</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link active" href="daily_goal.html"
+                >Mục Tiêu Hàng Ngày</a
+              >
+            </li>
+            <li class="nav-item dropdown">
+              <a
+                class="nav-link dropdown-toggle"
+                href="#"
+                id="userDropdown"
+                role="button"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+              >
+                Tài Khoản
+              </a>
+              <ul
+                class="dropdown-menu dropdown-menu-end"
+                aria-labelledby="userDropdown"
+              >
+                <li>
+                  <a class="dropdown-item" href="profile.html" id="userNameLink"
+                    >Profile</a
+                  >
+                </li>
+                <li><hr class="dropdown-divider" /></li>
+                <li>
+                  <a class="dropdown-item" href="#" id="logoutBtn">Đăng xuất</a>
+                </li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <div class="container mt-5">
+      <h2 class="mb-4">Mục Tiêu Hàng Ngày</h2>
+
+      <div class="card mb-4 shadow">
+        <div class="card-body">
+          <h5 class="card-title">Đặt số flashcard muốn ôn mỗi ngày</h5>
+          <form id="goalForm" class="row g-3">
+            <div class="col-auto">
+              <input
+                type="number"
+                class="form-control"
+                id="dailyGoalInput"
+                min="1"
+                placeholder="Số flashcard"
+                required
+              />
+            </div>
+            <div class="col-auto">
+              <button type="submit" class="btn btn-success">Cập nhật</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div class="card shadow">
+        <div class="card-body">
+          <h5 class="card-title">Tiến độ hôm nay</h5>
+          <p>Số flashcard đã ôn: <span id="reviewedCount">0</span></p>
+          <p>Mục tiêu: <span id="dailyGoal">0</span> flashcard</p>
+          <div class="progress">
+            <div
+              id="progressBar"
+              class="progress-bar"
+              role="progressbar"
+              style="width: 0%"
+            >
+              0%
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // ===================== CÀI ĐẶT USER =====================
+      const user = JSON.parse(localStorage.getItem("user"));
+      if (!user) {
+        alert("Vui lòng đăng nhập!");
+        window.location.href = "login.html";
+      }
+
+      const userNameLink = document.getElementById("userNameLink");
+      const logoutBtn = document.getElementById("logoutBtn");
+      if (userNameLink) userNameLink.textContent = user.email || "Profile";
+
+      if (logoutBtn) {
+        logoutBtn.addEventListener("click", () => {
+          localStorage.removeItem("user");
+          window.location.href = "login.html";
+        });
+      }
+
+      // ===================== DAILY GOAL =====================
+      const dailyGoalInput = document.getElementById("dailyGoalInput");
+      const dailyGoalSpan = document.getElementById("dailyGoal");
+      const reviewedCountSpan = document.getElementById("reviewedCount");
+      const progressBar = document.getElementById("progressBar");
+      const goalForm = document.getElementById("goalForm");
+
+      const goalKey = `dailyGoal_${user.id}`;
+      const reviewedKey = `reviewedToday_${user.id}`;
+      const dateKey = `reviewedDate_${user.id}`;
+
+      // Lấy ngày hôm nay dạng YYYY-MM-DD
+      function getToday() {
+        const d = new Date();
+        return d.toISOString().split("T")[0];
+      }
+      const today = getToday();
+
+      // Kiểm tra nếu ngày lưu khác ngày hiện tại => reset
+      const savedDate = localStorage.getItem(dateKey);
+      let reviewedToday = 0;
+      if (savedDate !== today) {
+        localStorage.setItem(reviewedKey, 0);
+        localStorage.setItem(dateKey, today);
+        reviewedToday = 0;
+      } else {
+        reviewedToday = parseInt(localStorage.getItem(reviewedKey)) || 0;
+      }
+
+      // Lấy mục tiêu, mặc định 5
+      let dailyGoal = parseInt(localStorage.getItem(goalKey)) || 5;
+      dailyGoalSpan.textContent = dailyGoal;
+      if (dailyGoalInput) dailyGoalInput.value = dailyGoal;
+
+      reviewedCountSpan.textContent = reviewedToday;
+      updateProgressBar();
+
+      // Lắng nghe localStorage từ các tab khác
+      window.addEventListener("storage", (event) => {
+        if (event.key === reviewedKey) {
+          reviewedToday = parseInt(event.newValue) || 0;
+          reviewedCountSpan.textContent = reviewedToday;
+          updateProgressBar();
+        }
+      });
+
+      function updateProgressBar() {
+        const percent = Math.min((reviewedToday / dailyGoal) * 100, 100);
+        progressBar.style.width = percent + "%";
+        progressBar.textContent = Math.round(percent) + "%";
+      }
+
+      // Cập nhật mục tiêu
+      if (goalForm) {
+        goalForm.addEventListener("submit", (e) => {
+          e.preventDefault();
+          const value = parseInt(dailyGoalInput.value);
+          if (value > 0) {
+            dailyGoal = value;
+            localStorage.setItem(goalKey, dailyGoal);
+            dailyGoalSpan.textContent = dailyGoal;
+            updateProgressBar();
+            alert("Đã cập nhật mục tiêu!");
+          }
+        });
+      }
+
+      // Hàm tăng số flashcard đã ôn, gọi từ các trang khác
+      function incrementReviewed() {
+        reviewedToday += 1;
+        localStorage.setItem(reviewedKey, reviewedToday);
+        localStorage.setItem(dateKey, today); // cập nhật ngày hôm nay
+        reviewedCountSpan.textContent = reviewedToday;
+        updateProgressBar();
+      }
+
+      window.incrementReviewed = incrementReviewed;
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  </body>
+</html>

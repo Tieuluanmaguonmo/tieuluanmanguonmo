@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Quản lý Người dùng</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="bg-light">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+      <div class="container-fluid">
+        <a class="navbar-brand" href="index.html">Flashcard App</a>
+        <button
+          class="navbar-toggler"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#navbarNav"
+          aria-controls="navbarNav"
+          aria-expanded="false"
+          aria-label="Toggle navigation"
+        >
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+          <ul class="navbar-nav ms-auto">
+            <li class="nav-item">
+              <a class="nav-link active" href="admin.html">QL Bộ Card</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="admin_user.html">QL Người dùng</a>
+            </li>
+            <li class="nav-item dropdown">
+              <a
+                class="nav-link dropdown-toggle"
+                href="#"
+                id="userDropdown"
+                role="button"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+              >
+                Tài Khoản
+              </a>
+              <ul
+                class="dropdown-menu dropdown-menu-end"
+                aria-labelledby="userDropdown"
+              >
+                <li>
+                  <a class="dropdown-item" href="profile.html" id="userNameLink"
+                    >Profile</a
+                  >
+                </li>
+                <li><hr class="dropdown-divider" /></li>
+                <li>
+                  <a class="dropdown-item" href="#" id="logoutBtn">Đăng xuất</a>
+                </li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+    <div class="container mt-5">
+      <h2 class="mb-4">Quản lý Người dùng</h2>
+
+      <!-- Form thêm/cập nhật người dùng -->
+      <div class="card mb-4 p-3 shadow">
+        <h5 id="formTitle">Thêm Người dùng</h5>
+        <form id="userForm">
+          <input type="hidden" id="userId" />
+          <div class="mb-3">
+            <label class="form-label">Email</label>
+            <input type="email" id="userEmail" class="form-control" required />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Mật khẩu</label>
+            <input
+              type="password"
+              id="userPassword"
+              class="form-control"
+              required
+            />
+          </div>
+          <button type="submit" class="btn btn-primary">Lưu</button>
+          <button type="button" id="cancelBtn" class="btn btn-secondary">
+            Hủy
+          </button>
+        </form>
+      </div>
+
+      <!-- Table hiển thị người dùng -->
+      <table class="table table-bordered table-striped shadow bg-white">
+        <thead class="table-dark">
+          <tr>
+            <th>Email</th>
+            <th>Hành động</th>
+          </tr>
+        </thead>
+        <tbody id="userTableBody"></tbody>
+      </table>
+    </div>
+
+    <script>
+      const API_BASE = "http://127.0.0.1:8000";
+
+      let users = [];
+
+      const userTableBody = document.getElementById("userTableBody");
+      const userForm = document.getElementById("userForm");
+      const formTitle = document.getElementById("formTitle");
+      const cancelBtn = document.getElementById("cancelBtn");
+      const userIdInput = document.getElementById("userId");
+      const userEmailInput = document.getElementById("userEmail");
+      const userPasswordInput = document.getElementById("userPassword");
+
+      const currentUser = JSON.parse(localStorage.getItem("user"));
+      if (!currentUser) alert("Vui lòng đăng nhập trước khi quản lý!");
+
+      // -----------------------
+      // Load danh sách người dùng
+      // -----------------------
+      async function loadUsers() {
+        try {
+          const res = await fetch(`${API_BASE}/nguoi-dung`);
+          users = await res.json();
+          renderTable();
+        } catch (err) {
+          alert("Lỗi tải dữ liệu: " + err);
+        }
+      }
+
+      function renderTable() {
+        userTableBody.innerHTML = "";
+        users.forEach((u) => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+        <td>${u.email}</td>
+        <td>
+          <button class="btn btn-sm btn-info me-1" onclick="editUser('${u.id}')">Sửa</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteUser('${u.id}')">Xóa</button>
+        </td>
+      `;
+          userTableBody.appendChild(tr);
+        });
+      }
+
+      // -----------------------
+      // Thêm hoặc cập nhật
+      // -----------------------
+      userForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const id = userIdInput.value;
+        const email = userEmailInput.value;
+        const mat_khau = userPasswordInput.value;
+
+        try {
+          if (id) {
+            // PUT chưa có endpoint cho cập nhật mật khẩu => cần backend support
+            alert("Chức năng cập nhật hiện tại chưa hỗ trợ thay đổi mật khẩu.");
+          } else {
+            // POST thêm mới
+            const res = await fetch(`${API_BASE}/nguoi-dung`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ email, mat_khau }),
+            });
+            if (!res.ok) {
+              const err = await res.json();
+              throw new Error(err.detail || "Thêm thất bại");
+            }
+          }
+
+          userForm.reset();
+          userIdInput.value = "";
+          formTitle.textContent = "Thêm Người dùng";
+          await loadUsers();
+        } catch (err) {
+          alert(err.message);
+        }
+      });
+
+      // -----------------------
+      // Edit user
+      // -----------------------
+      function editUser(id) {
+        const u = users.find((user) => user.id === id);
+        if (!u) return;
+        userIdInput.value = u.id;
+        userEmailInput.value = u.email;
+        userPasswordInput.value = ""; // không show mật khẩu
+        formTitle.textContent = "Cập nhật Người dùng";
+      }
+
+      cancelBtn.addEventListener("click", () => {
+        userForm.reset();
+        userIdInput.value = "";
+        formTitle.textContent = "Thêm Người dùng";
+      });
+
+      // -----------------------
+      // Delete user
+      // -----------------------
+      async function deleteUser(id) {
+        if (!confirm("Bạn có chắc chắn muốn xóa người dùng này?")) return;
+        try {
+          const res = await fetch(`${API_BASE}/nguoi-dung/${id}`, {
+            method: "DELETE",
+          });
+          if (!res.ok) throw new Error("Xóa thất bại");
+          await loadUsers();
+        } catch (err) {
+          alert(err.message);
+        }
+      }
+
+      // ========================
+      // INIT
+      // ========================
+      loadUsers();
+    </script>
+    <script>
+      // ===================== USER LOGIN + LOGOUT =====================
+      const user = JSON.parse(localStorage.getItem("user"));
+      if (!user) {
+        alert("Vui lòng đăng nhập!");
+        window.location.href = "login.html"; // chuyển về trang login
+      }
+
+      // Dropdown user & logout
+      const userNameLink = document.getElementById("userNameLink");
+      const logoutBtn = document.getElementById("logoutBtn");
+      if (userNameLink) userNameLink.textContent = user.email || "Profile";
+
+      if (logoutBtn) {
+        logoutBtn.addEventListener("click", () => {
+          localStorage.removeItem("user");
+          window.location.href = "login.html";
+        });
+      }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  </body>
+</html>
